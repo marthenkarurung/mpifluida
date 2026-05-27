@@ -1,0 +1,1132 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  BookOpen, 
+  Award, 
+  ChevronRight, 
+  ChevronLeft, 
+  RotateCcw, 
+  CheckCircle2, 
+  XCircle, 
+  Info, 
+  HelpCircle, 
+  Waves, 
+  Compass, 
+  Activity,
+  ArrowRight,
+  User,
+  GraduationCap
+} from 'lucide-react';
+
+export default function App() {
+  // State navigasi utama
+  // 'cover' | 'hidrostatis' | 'pascal' | 'archimedes' | 'asesmen'
+  const [activeTab, setActiveTab] = useState('cover');
+  
+  // State untuk Simulator Tekanan Hidrostatis
+  const [densityH, setDensityH] = useState(1000); // kg/m^3 (air)
+  const [gravityH, setGravityH] = useState(9.8); // m/s^2
+  const [depthH, setDepthH] = useState(5); // meter
+  
+  // State untuk Simulator Hukum Pascal
+  const [forceF1, setForceF1] = useState(20); // Newton
+  const [areaA1, setAreaA1] = useState(10); // cm^2
+  const [areaA2, setAreaA2] = useState(150); // cm^2
+
+  // State untuk Simulator Hukum Archimedes
+  const [massA, setMassA] = useState(400); // gram
+  const [volumeA, setVolumeA] = useState(500); // cm^3
+  const [densityFluidA, setDensityFluidA] = useState(1.0); // g/cm^3
+
+  // State untuk Asesmen CAT
+  const [catStep, setCatStep] = useState('start'); // 'start' | 'questions' | 'result'
+  const [currentQ, setCurrentQ] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState(Array(5).fill(null));
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+
+  // Bank Soal CAT
+  const questions = [
+    {
+      id: 1,
+      question: "Sebuah kapal selam berada di kedalaman 50 meter di bawah permukaan air laut. Jika massa jenis air laut adalah 1.030 kg/m³ dan percepatan gravitasi bumi adalah 9,8 m/s², berapakah tekanan hidrostatis yang dialami oleh dinding kapal selam tersebut?",
+      options: [
+        { text: "103.000 Pa", isCorrect: false },
+        { text: "450.000 Pa", isCorrect: false },
+        { text: "504.700 Pa", isCorrect: true },
+        { text: "515.000 Pa", isCorrect: false }
+      ],
+      explanation: "Rumus Tekanan Hidrostatis: P_h = ρ · g · h. Maka P_h = 1.030 kg/m³ × 9,8 m/s² × 50 m = 504.700 Pa."
+    },
+    {
+      id: 2,
+      question: "Sebuah dongkrak hidrolik memiliki piston kecil dengan luas penampang A₁ = 5 cm² dan piston besar dengan luas penampang A₂ = 100 cm². Jika gaya sebesar 20 N diberikan pada piston kecil, berapakah gaya angkat maksimal yang dihasilkan pada piston besar?",
+      options: [
+        { text: "100 N", isCorrect: false },
+        { text: "200 N", isCorrect: false },
+        { text: "400 N", isCorrect: true },
+        { text: "800 N", isCorrect: false }
+      ],
+      explanation: "Berdasarkan Hukum Pascal: F₁/A₁ = F₂/A₂. Maka F₂ = F₁ × (A₂ / A₁) = 20 N × (100 cm² / 5 cm²) = 20 × 20 = 400 N."
+    },
+    {
+      id: 3,
+      question: "Manakah dari pernyataan berikut yang paling tepat mengenai variabel-variwal yang mempengaruhi besarnya Gaya Apung (Hukum Archimedes) pada suatu benda yang dimasukkan ke dalam zat cair?",
+      options: [
+        { text: "Massa benda, volume seluruh benda, dan bentuk wadah zat cair.", isCorrect: false },
+        { text: "Massa jenis zat cair, volume bagian benda yang tercelup, dan gravitasi setempat.", isCorrect: true },
+        { text: "Luas permukaan benda, berat benda di udara, dan suhu zat cair.", isCorrect: false },
+        { text: "Kedalaman letak benda di dalam air dan diameter penampang wadah.", isCorrect: false }
+      ],
+      explanation: "Sesuai rumus Gaya Archimedes: F_A = ρ_f · V_bf · g. Gaya apung hanya dipengaruhi oleh massa jenis fluida (ρ_f), volume benda yang tercelup (V_bf), dan percepatan gravitasi (g)."
+    },
+    {
+      id: 4,
+      question: "Sebuah balok kayu dengan volume 0,002 m³ dimasukkan ke dalam wadah berisi air (massa jenis air = 1.000 kg/m³). Jika massa jenis balok kayu adalah 700 kg/m³, bagaimanakah keadaan kayu tersebut beserta alasannya?",
+      options: [
+        { text: "Tenggelam, karena massa jenis kayu lebih besar daripada massa jenis air.", isCorrect: false },
+        { text: "Terapung, dengan 70% volume benda berada di bawah permukaan air.", isCorrect: true },
+        { text: "Melayang, karena seluruh bagian benda tercelup tepat di tengah-tengah air.", isCorrect: false },
+        { text: "Terapung, dengan 30% volume benda berada di bawah permukaan air.", isCorrect: false }
+      ],
+      explanation: "Karena ρ_benda (700 kg/m³) < ρ_fluida (1.000 kg/m³), benda akan terapung. Rasio volume tercelup V_tercelup/V_total = ρ_benda/ρ_fluida = 700/1000 = 70%. Sehingga 70% bagian terendam di bawah air."
+    },
+    {
+      id: 5,
+      question: "Tekanan hidrostatis pada dasar suatu wadah yang berisi zat cair diam TIDAK bergantung pada variabel...",
+      options: [
+        { text: "Massa jenis zat cair di dalam wadah", isCorrect: false },
+        { text: "Kedalaman permukaan zat cair tersebut", isCorrect: false },
+        { text: "Bentuk wadah atau luas permukaan dasar wadah", isCorrect: true },
+        { text: "Percepatan gravitasi di lokasi percobaan", isCorrect: false }
+      ],
+      explanation: "Tekanan hidrostatis (P_h = ρgh) hanya dipengaruhi oleh massa jenis zat cair, percepatan gravitasi, dan kedalaman. Bentuk wadah maupun luas dasarnya tidak mempengaruhi besarnya tekanan hidrostatis (Sifat paradoks hidrostatis)."
+    }
+  ];
+
+  // Efek suara sederhana (Web Audio API) untuk interaktivitas
+  const playSound = (type) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'correct') {
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      } else if (type === 'incorrect') {
+        osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
+        osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.2); // A2
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } else if (type === 'click') {
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      }
+    } catch (e) {
+      // Audio tidak didukung atau diblokir browser
+    }
+  };
+
+  // Navigasi halaman materi secara berurutan
+  const nextSection = () => {
+    playSound('click');
+    if (activeTab === 'cover') setActiveTab('hidrostatis');
+    else if (activeTab === 'hidrostatis') setActiveTab('pascal');
+    else if (activeTab === 'pascal') setActiveTab('archimedes');
+    else if (activeTab === 'archimedes') setActiveTab('asesmen');
+  };
+
+  const prevSection = () => {
+    playSound('click');
+    if (activeTab === 'hidrostatis') setActiveTab('cover');
+    else if (activeTab === 'pascal') setActiveTab('hidrostatis');
+    else if (activeTab === 'archimedes') setActiveTab('pascal');
+    else if (activeTab === 'asesmen') {
+      setActiveTab('archimedes');
+      setCatStep('start');
+    }
+  };
+
+  // Logika interaksi kuis CAT
+  const handleAnswerSelect = (optionIdx) => {
+    if (isAnswered) return;
+    const newSelected = [...selectedAnswers];
+    newSelected[currentQ] = optionIdx;
+    setSelectedAnswers(newSelected);
+  };
+
+  const handleCheckAnswer = () => {
+    if (selectedAnswers[currentQ] === null || isAnswered) return;
+    const correct = questions[currentQ].options[selectedAnswers[currentQ]].isCorrect;
+    if (correct) {
+      playSound('correct');
+      setQuizScore(prev => prev + 1);
+    } else {
+      playSound('incorrect');
+    }
+    setIsAnswered(true);
+  };
+
+  const handleNextQuestion = () => {
+    playSound('click');
+    if (currentQ < questions.length - 1) {
+      setCurrentQ(currentQ + 1);
+      setIsAnswered(false);
+    } else {
+      setCatStep('result');
+    }
+  };
+
+  const resetQuiz = () => {
+    playSound('click');
+    setCurrentQ(0);
+    setSelectedAnswers(Array(5).fill(null));
+    setIsAnswered(false);
+    setQuizScore(0);
+    setCatStep('questions');
+  };
+
+  // Hitung Nilai Tekanan Hidrostatis
+  const calculatedPh = (densityH * gravityH * depthH).toFixed(0);
+
+  // Hitung Nilai Gaya Pascal (F2)
+  const calculatedF2 = ((forceF1 * areaA2) / areaA1).toFixed(1);
+
+  // Analisis Archimedes
+  const objDensity = massA / volumeA; // g/cm^3
+  let archimedesState = "";
+  let submergedVolume = 0; // cm^3
+  let buoyantForce = 0; // Newton (dengan g = 9.8 m/s^2)
+  const gArchimedes = 9.8;
+
+  if (objDensity < densityFluidA) {
+    archimedesState = "Terapung";
+    submergedVolume = (massA / densityFluidA).toFixed(1);
+    buoyantForce = ((densityFluidA * 1000 * (submergedVolume / 1000000) * gArchimedes)).toFixed(2);
+  } else if (Math.abs(objDensity - densityFluidA) < 0.001) {
+    archimedesState = "Melayang";
+    submergedVolume = volumeA;
+    buoyantForce = ((densityFluidA * 1000 * (volumeA / 1000000) * gArchimedes)).toFixed(2);
+  } else {
+    archimedesState = "Tenggelam";
+    submergedVolume = volumeA;
+    buoyantForce = ((densityFluidA * 1000 * (volumeA / 1000000) * gArchimedes)).toFixed(2);
+  }
+  const weightInAir = ((massA / 1000) * gArchimedes).toFixed(2);
+  const apparentWeight = Math.max(0, weightInAir - buoyantForce).toFixed(2);
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      {/* Header Utama */}
+      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-600 rounded-lg text-white animate-pulse">
+              <Waves className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg sm:text-xl text-indigo-400 tracking-wide">FISIKA INTERAKTIF</h1>
+              <p className="text-xs text-slate-400">Konsep & Aplikasi Fluida Statis Kelas XI</p>
+            </div>
+          </div>
+          
+          {/* Navigasi Tab */}
+          <nav className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button 
+              onClick={() => { playSound('click'); setActiveTab('cover'); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'cover' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Cover & Profil
+            </button>
+            <button 
+              onClick={() => { playSound('click'); setActiveTab('hidrostatis'); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'hidrostatis' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              1. Hidrostatis
+            </button>
+            <button 
+              onClick={() => { playSound('click'); setActiveTab('pascal'); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'pascal' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              2. Hukum Pascal
+            </button>
+            <button 
+              onClick={() => { playSound('click'); setActiveTab('archimedes'); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'archimedes' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              3. Archimedes
+            </button>
+            <button 
+              onClick={() => { playSound('click'); setActiveTab('asesmen'); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'asesmen' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              4. CAT Asesmen
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {/* Konten Utama */}
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 flex flex-col justify-center">
+        
+        {/* ==================== 1. COVER PAGE ==================== */}
+        {activeTab === 'cover' && (
+          <div className="grid md:grid-cols-12 gap-8 items-center py-6 sm:py-12 animate-fadeIn">
+            {/* Bagian Kiri: Banner */}
+            <div className="md:col-span-7 flex flex-col gap-5">
+              <span className="self-start px-3 py-1 bg-indigo-500/10 text-indigo-400 text-sm font-semibold rounded-full border border-indigo-500/20">
+                Media Pembelajaran Interaktif
+              </span>
+              <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-indigo-400 leading-tight">
+                Selamat Datang di <br />
+                <span className="text-indigo-500">Kelas Fisika</span>
+              </h2>
+              <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl">
+                Mari jelajahi rahasia mekanika fluida statis! Di aplikasi ini, Anda dapat bereksperimen langsung dengan variabel fisis dalam <span className="text-indigo-400 font-semibold">Tekanan Hidrostatis, Hukum Pascal</span>, dan <span className="text-indigo-400 font-semibold">Hukum Archimedes</span>, lalu menguji pemahaman Anda dalam simulasi ujian CAT.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                <button 
+                  onClick={nextSection}
+                  className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/35 transition-all transform hover:-translate-y-0.5 group"
+                >
+                  Mulai Pembelajaran 
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button 
+                  onClick={() => { playSound('click'); setActiveTab('asesmen'); setCatStep('questions'); }}
+                  className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-2 transition-all"
+                >
+                  <Award className="w-5 h-5 text-indigo-400" />
+                  Langsung Ujian CAT
+                </button>
+              </div>
+            </div>
+
+            {/* Bagian Kanan: Profil Pengembang */}
+            <div className="md:col-span-5 bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/60 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl"></div>
+              
+              {/* Bingkai foto pengembang - Menggunakan foto unggahan baru yang disediakan */}
+              <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden mb-5 border-4 border-slate-700/80 shadow-inner group">
+                <img 
+                  src="https://i.freeimage.host/CdiQByB.png" 
+                  alt="Marthen Karurung - Pengembang"
+                  className="w-full h-full object-cover object-top transform hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    // Fallback jika gambar PNG tidak termuat dengan baik
+                    e.target.onerror = null;
+                    e.target.src = "IMG20250715140613.jpg";
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 to-transparent"></div>
+              </div>
+
+              <div className="flex items-center gap-1 bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full text-xs font-semibold mb-2 border border-indigo-500/20">
+                <GraduationCap className="w-3.5 h-3.5" />
+                Pengembang Aplikasi
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-wide">Marthen Karurung</h3>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">Guru Fisika & Edukator Sains Kreatif</p>
+              
+              <div className="w-full h-[1px] bg-slate-800 my-4"></div>
+              
+              <p className="text-xs text-slate-400 italic leading-relaxed">
+                "Fisika bukanlah sekadar rumus yang dihafal, melainkan cara kita memahami keteraturan semesta melalui pemodelan dan logika interaktif."
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== 2. TEKANAN HIDROSTATIS ==================== */}
+        {activeTab === 'hidrostatis' && (
+          <div className="grid lg:grid-cols-12 gap-6 py-4 animate-fadeIn">
+            {/* Sisi Informasi & Pembelajaran */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+                <span className="bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">Materi Bagian 1</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Tekanan Hidrostatis</h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Setiap molekul zat cair ditarik ke pusat bumi oleh gravitasi, menciptakan beban bagi molekul di bawahnya. Tekanan zat cair yang diakibatkan oleh pengaruh gaya gravitasi bumi pada kedalaman tertentu disebut <span className="text-indigo-300 font-semibold">Tekanan Hidrostatis ($P_h$)</span>.
+              </p>
+
+              <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-2 shadow-inner">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Persamaan Utama</span>
+                <div className="text-center py-2 bg-slate-950 rounded-lg border border-slate-800/80">
+                  <p className="text-2xl font-bold text-indigo-400">P_h = ρ · g · h</p>
+                </div>
+                <div className="text-xs text-slate-300 space-y-1 mt-1">
+                  <p><strong className="text-indigo-300">P_h</strong> = Tekanan Hidrostatis (Pascal atau N/m²)</p>
+                  <p><strong className="text-indigo-300">ρ (rho)</strong> = Massa jenis fluida (kg/m³)</p>
+                  <p><strong className="text-indigo-300">g</strong> = Percepatan gravitasi setempat (m/s²)</p>
+                  <p><strong className="text-indigo-300">h</strong> = Kedalaman diukur dari permukaan zat cair (m)</p>
+                </div>
+              </div>
+
+              {/* Kesimpulan Variabel */}
+              <div className="bg-indigo-950/40 p-3.5 rounded-xl border border-indigo-500/20 text-xs text-indigo-200">
+                <div className="flex gap-2.5">
+                  <Info className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                  <p>
+                    <strong>Identifikasi Variabel:</strong> Tekanan hidrostatis berbanding lurus dengan massa jenis zat cair (<span className="font-semibold">ρ</span>) dan kedalamannya (<span className="font-semibold">h</span>). Luas permukaan atau bentuk wadah sama sekali tidak mempengaruhi tekanan ini.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sisi Eksperimen Virtual */}
+            <div className="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 p-5 flex flex-col gap-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-bold text-indigo-400 text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  Virtual Lab: Simulasi Tekanan Hidrostatis
+                </h3>
+                <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Aktif</span>
+              </div>
+
+              {/* Grafik Wadah & Sensor Tekanan */}
+              <div className="relative h-48 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex items-end">
+                {/* Visual Air */}
+                <div 
+                  className="w-full bg-gradient-to-t from-indigo-950/90 to-cyan-800/70 relative transition-all duration-300"
+                  style={{ height: `${depthH * 9}%` }} // Maks kedalaman 10m setara 90% tinggi wadah
+                >
+                  {/* Riak Air Efek Animasi */}
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-cyan-400 opacity-60 animate-pulse"></div>
+                  
+                  {/* Indikator Kedalaman yang Dipilih */}
+                  <div className="absolute bottom-1/2 left-4 bg-slate-950/80 px-2 py-1 rounded text-2xs text-slate-300 border border-slate-800 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    Kedalaman: {depthH} meter
+                  </div>
+                </div>
+
+                {/* Grid Skala Kedalaman */}
+                <div className="absolute inset-y-0 right-4 flex flex-col justify-between text-2xs text-slate-400 py-3 font-mono pointer-events-none">
+                  <span>0 m (Permukaan)</span>
+                  <span>2.5 m</span>
+                  <span>5.0 m</span>
+                  <span>7.5 m</span>
+                  <span>10.0 m (Dasar)</span>
+                </div>
+
+                {/* Alat Pengukur Tekanan (Gauge) */}
+                <div className="absolute top-6 left-6 bg-slate-950/95 border border-slate-700 rounded-xl p-3 shadow-xl">
+                  <span className="text-2xs uppercase tracking-wider text-slate-400 block font-semibold">Sensor Tekanan Hidrostatis</span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-black text-cyan-400 font-mono">
+                      {Number(calculatedPh).toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-xs text-slate-300">Pascal (Pa)</span>
+                  </div>
+                  <div className="text-2xs text-slate-400 mt-1 border-t border-slate-800 pt-1.5">
+                    Massa Jenis: {densityH} kg/m³ | Gravitasi: {gravityH} m/s²
+                  </div>
+                </div>
+              </div>
+
+              {/* Kontrol Input (Sliders) */}
+              <div className="grid sm:grid-cols-3 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-850">
+                {/* Slider Massa Jenis */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Massa Jenis (ρ):</span>
+                    <span className="text-indigo-400 font-mono">{densityH} kg/m³</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="600" 
+                    max="1600" 
+                    step="50"
+                    value={densityH} 
+                    onChange={(e) => { setDensityH(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-2xs text-slate-500">
+                    <span>Minyak (800)</span>
+                    <span>Air (1000)</span>
+                    <span>Madu (1400)</span>
+                  </div>
+                </div>
+
+                {/* Slider Percepatan Gravitasi */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Gravitasi (g):</span>
+                    <span className="text-indigo-400 font-mono">{gravityH} m/s²</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="1.6" 
+                    max="25.0" 
+                    step="0.1"
+                    value={gravityH} 
+                    onChange={(e) => { setGravityH(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-2xs text-slate-500">
+                    <span>Bulan (1.6)</span>
+                    <span>Bumi (9.8)</span>
+                    <span>Yupiter (24.8)</span>
+                  </div>
+                </div>
+
+                {/* Slider Kedalaman */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Kedalaman (h):</span>
+                    <span className="text-indigo-400 font-mono">{depthH} m</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0.5" 
+                    max="10.0" 
+                    step="0.5"
+                    value={depthH} 
+                    onChange={(e) => { setDepthH(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-2xs text-slate-500">
+                    <span>Dangkal</span>
+                    <span>Sedang</span>
+                    <span>Sangat Dalam</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== 3. HUKUM PASCAL ==================== */}
+        {activeTab === 'pascal' && (
+          <div className="grid lg:grid-cols-12 gap-6 py-4 animate-fadeIn">
+            {/* Sisi Informasi & Pembelajaran */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+                <span className="bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">Materi Bagian 2</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Hukum Pascal</h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Blaise Pascal menemukan bahwa jika ada tekanan eksternal yang diberikan kepada fluida yang terkurung dalam wadah tertutup, tekanan tersebut akan <span className="text-indigo-300 font-semibold">diteruskan ke segala arah dengan sama besar</span> tanpa berkurang.
+              </p>
+
+              <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-2 shadow-inner">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Persamaan Utama</span>
+                <div className="text-center py-2 bg-slate-950 rounded-lg border border-slate-800/80">
+                  <p className="text-2xl font-bold text-indigo-400">F₁/A₁ = F₂/A₂</p>
+                </div>
+                <div className="text-xs text-slate-300 space-y-1 mt-1">
+                  <p><strong className="text-indigo-300">F_1</strong> = Gaya tekan pada piston masukan kecil (Newton)</p>
+                  <p><strong className="text-indigo-300">A_1</strong> = Luas penampang piston masukan kecil (cm² / m²)</p>
+                  <p><strong className="text-indigo-300">F_2</strong> = Gaya angkat pada piston keluaran besar (Newton)</p>
+                  <p><strong className="text-indigo-300">A_2</strong> = Luas penampang piston keluaran besar (cm² / m²)</p>
+                </div>
+              </div>
+
+              {/* Kesimpulan Variabel */}
+              <div className="bg-indigo-950/40 p-3.5 rounded-xl border border-indigo-500/20 text-xs text-indigo-200">
+                <div className="flex gap-2.5">
+                  <Info className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                  <p>
+                    <strong>Identifikasi Variabel:</strong> Gaya keluaran (<span className="font-semibold">F_2</span>) sebanding dengan perbandingan luas penampang (<span className="font-semibold">A_2/A_1</span>). Semakin besar rasio luas piston besar terhadap piston kecil, semakin lipat ganda pula gaya angkat yang dihasilkan.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sisi Eksperimen Virtual */}
+            <div className="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 p-5 flex flex-col gap-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-bold text-indigo-400 text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  Virtual Lab: Dongkrak Hidrolik Pascal
+                </h3>
+                <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Aktif</span>
+              </div>
+
+              {/* Representasi Visual Dongkrak Hidrolik */}
+              <div className="relative h-48 bg-slate-900 rounded-xl border border-slate-800 p-4 flex justify-between items-end">
+                {/* Piston Kecil Kiri */}
+                <div className="w-1/4 flex flex-col items-center gap-1">
+                  <span className="text-2xs text-slate-400 font-mono">Piston Masukan</span>
+                  
+                  {/* Indikator Panah Gaya Tekan F1 */}
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xs text-red-400 font-bold mb-0.5">F₁ = {forceF1} N</span>
+                    <div className="w-1 bg-red-500 h-8 relative flex items-end">
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-red-500"></div>
+                    </div>
+                  </div>
+
+                  {/* Silinder Piston Kiri */}
+                  <div 
+                    className="bg-indigo-950/80 border-t-4 border-slate-400 transition-all text-center flex items-center justify-center text-2xs text-slate-300 font-mono font-semibold"
+                    style={{ 
+                      width: `${Math.max(25, areaA1 * 3.5)}px`, 
+                      height: '50px' 
+                    }}
+                  >
+                    A₁: {areaA1} cm²
+                  </div>
+                </div>
+
+                {/* Penghubung Cairan (U-Shape) */}
+                <div className="absolute bottom-4 left-[20%] right-[20%] h-6 bg-indigo-950 border-b-2 border-indigo-500 opacity-60 z-0 rounded-b-lg"></div>
+
+                {/* Piston Besar Kanan */}
+                <div className="w-1/2 flex flex-col items-center gap-1 z-10">
+                  <span className="text-2xs text-slate-400 font-mono">Piston Beban</span>
+
+                  {/* Beban Mobil yang Diangkat */}
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xs text-emerald-400 font-bold">Mobil Terangkat!</span>
+                    {/* Sketsa Mobil Sederhana dari CSS */}
+                    <div className="w-20 h-6 bg-slate-800 rounded-lg relative flex items-center justify-center border border-slate-700 shadow-md">
+                      <div className="w-10 h-4 bg-indigo-500/30 rounded-t-lg absolute -top-3"></div>
+                      <div className="w-3.5 h-3.5 rounded-full bg-slate-950 border border-slate-700 absolute bottom-[-4px] left-2"></div>
+                      <div className="w-3.5 h-3.5 rounded-full bg-slate-950 border border-slate-700 absolute bottom-[-4px] right-2"></div>
+                      <span className="text-3xs text-white relative font-semibold">F₂: {calculatedF2} N</span>
+                    </div>
+                  </div>
+
+                  {/* Silinder Piston Kanan */}
+                  <div 
+                    className="bg-indigo-950/80 border-t-4 border-slate-400 transition-all text-center flex items-center justify-center text-2xs text-slate-300 font-mono font-semibold mt-3"
+                    style={{ 
+                      width: `${Math.max(70, areaA2 * 0.9)}px`, 
+                      height: '50px' 
+                    }}
+                  >
+                    A₂: {areaA2} cm²
+                  </div>
+                </div>
+
+                {/* Hasil Perhitungan Box */}
+                <div className="absolute top-4 left-4 right-4 bg-slate-950/90 border border-slate-800 rounded-lg px-3 py-1.5 flex justify-between items-center text-2xs">
+                  <div>
+                    <span className="text-slate-400">Rasio Luas (A₂ / A₁):</span>
+                    <strong className="text-indigo-400 ml-1">{(areaA2 / areaA1).toFixed(1)}x lipat</strong>
+                  </div>
+                  <div className="h-4 w-[1px] bg-slate-800"></div>
+                  <div>
+                    <span className="text-slate-400">Gaya Angkat Keluar (F₂):</span>
+                    <strong className="text-emerald-400 ml-1 font-mono text-xs">{calculatedF2} Newton</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Kontrol Input Sliders */}
+              <div className="grid sm:grid-cols-3 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-850">
+                {/* Gaya Masukan F1 */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Gaya Input (F₁):</span>
+                    <span className="text-indigo-400 font-mono">{forceF1} N</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="100" 
+                    step="5"
+                    value={forceF1} 
+                    onChange={(e) => { setForceF1(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-3xs text-slate-500">Gaya yang Anda tekan secara fisik</span>
+                </div>
+
+                {/* Luas Piston Kecil A1 */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Luas A₁:</span>
+                    <span className="text-indigo-400 font-mono">{areaA1} cm²</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="30" 
+                    step="1"
+                    value={areaA1} 
+                    onChange={(e) => { setAreaA1(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-3xs text-slate-500">Luas penampang piston tekan</span>
+                </div>
+
+                {/* Luas Piston Besar A2 */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Luas A₂:</span>
+                    <span className="text-indigo-400 font-mono">{areaA2} cm²</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="100" 
+                    max="300" 
+                    step="10"
+                    value={areaA2} 
+                    onChange={(e) => { setAreaA2(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-3xs text-slate-500">Luas penampang dongkrak angkat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== 4. HUKUM ARCHIMEDES ==================== */}
+        {activeTab === 'archimedes' && (
+          <div className="grid lg:grid-cols-12 gap-6 py-4 animate-fadeIn">
+            {/* Sisi Informasi & Pembelajaran */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+                <span className="bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">Materi Bagian 3</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Hukum Archimedes</h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Setiap benda yang dicelupkan sebagian atau seluruhnya ke dalam zat cair akan mengalami <span className="text-indigo-300 font-semibold">Gaya Apung (Gaya Ke Atas, $F_A$)</span> yang besarnya sama dengan berat zat cair yang dipindahkan oleh benda tersebut.
+              </p>
+
+              <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col gap-2 shadow-inner">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Persamaan Utama & Keadaan</span>
+                <div className="text-center py-2 bg-slate-950 rounded-lg border border-slate-800/80">
+                  <p className="text-xl font-bold text-indigo-400">F_A = ρ_f · V_bf · g</p>
+                </div>
+                <div className="text-xs text-slate-300 space-y-1.5 mt-1">
+                  <p>• <strong className="text-indigo-300">Terapung:</strong> ρ_benda &lt; ρ_fluida (Sebagian benda terendam)</p>
+                  <p>• <strong className="text-indigo-300">Melayang:</strong> ρ_benda = ρ_fluida (Tercelup seluruhnya, bebas melayang)</p>
+                  <p>• <strong className="text-indigo-300">Tenggelam:</strong> ρ_benda &gt; ρ_fluida (Benda jatuh ke dasar wadah)</p>
+                </div>
+              </div>
+
+              {/* Kesimpulan Variabel */}
+              <div className="bg-indigo-950/40 p-3.5 rounded-xl border border-indigo-500/20 text-xs text-indigo-200">
+                <div className="flex gap-2.5">
+                  <Info className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                  <p>
+                    <strong>Identifikasi Variabel:</strong> Besarnya gaya ke atas dipengaruhi oleh kerapatan fluida (<span className="font-semibold">ρ_f</span>) dan seberapa banyak volume bagian yang terendam (<span className="font-semibold">V_bf</span>). Berat total benda tidak mempengaruhi gaya apung melainkan menentukan apakah ia tenggelam.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sisi Eksperimen Virtual */}
+            <div className="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 p-5 flex flex-col gap-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-bold text-indigo-400 text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  Virtual Lab: Bejana Apung Archimedes
+                </h3>
+                <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Aktif</span>
+              </div>
+
+              {/* Tanki Air Visual */}
+              <div className="relative h-48 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex flex-col justify-end">
+                {/* Permukaan Air */}
+                <div className="absolute top-12 left-0 right-0 h-36 bg-indigo-950/60 border-t-2 border-indigo-400 z-10"></div>
+                
+                {/* Visual Benda Bergerak Berdasarkan Densitas */}
+                <div 
+                  className={`absolute left-1/2 -translate-x-1/2 w-16 h-16 rounded-lg border-2 flex flex-col justify-center items-center text-3xs font-bold transition-all duration-700 z-20 shadow-md ${
+                    archimedesState === "Terapung" 
+                      ? "top-[25%] bg-amber-600/90 border-amber-400 text-white" 
+                      : archimedesState === "Melayang" 
+                        ? "top-[40%] bg-amber-700/80 border-amber-500 text-white animate-pulse" 
+                        : "bottom-1 bg-amber-900 border-amber-700 text-slate-300"
+                  }`}
+                >
+                  <span>ρ: {objDensity.toFixed(2)}</span>
+                  <span>g/cm³</span>
+                </div>
+
+                {/* Dashboard Hasil Pengukuran */}
+                <div className="absolute top-4 left-4 right-4 bg-slate-950/90 border border-slate-800 rounded-lg p-3 z-30 grid grid-cols-3 gap-2 text-2xs">
+                  <div className="text-center">
+                    <span className="text-slate-400 block">Kondisi Benda</span>
+                    <span className={`text-sm font-black uppercase tracking-wide block ${
+                      archimedesState === "Terapung" ? "text-amber-400" : archimedesState === "Melayang" ? "text-sky-400" : "text-rose-400"
+                    }`}>{archimedesState}</span>
+                  </div>
+                  <div className="text-center border-x border-slate-800">
+                    <span className="text-slate-400 block">Gaya Apung (FA)</span>
+                    <span className="text-sm font-black text-indigo-300 block font-mono">{buoyantForce} N</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-slate-400 block">Berat Semu</span>
+                    <span className="text-sm font-black text-emerald-300 block font-mono">{apparentWeight} N</span>
+                  </div>
+                </div>
+
+                {/* Info Tambahan */}
+                <div className="absolute bottom-2 left-2 z-30 text-3xs text-slate-400 bg-slate-950/80 px-2 py-0.5 rounded border border-slate-850">
+                  Vol Terendam: {submergedVolume} cm³
+                </div>
+              </div>
+
+              {/* Kontrol Input Sliders */}
+              <div className="grid sm:grid-cols-3 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-850">
+                {/* Massa Benda */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Massa Benda (m):</span>
+                    <span className="text-indigo-400 font-mono">{massA} g</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="100" 
+                    max="800" 
+                    step="50"
+                    value={massA} 
+                    onChange={(e) => { setMassA(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-3xs text-slate-500">Mempengaruhi berat nyata benda</span>
+                </div>
+
+                {/* Volume Benda */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Volume Benda (V):</span>
+                    <span className="text-indigo-400 font-mono">{volumeA} cm³</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="300" 
+                    max="800" 
+                    step="50"
+                    value={volumeA} 
+                    onChange={(e) => { setVolumeA(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-3xs text-slate-500">Mempengaruhi volume fluida dipindahkan</span>
+                </div>
+
+                {/* Massa Jenis Fluida */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex justify-between">
+                    <span>Massa Jenis Air (ρ_f):</span>
+                    <span className="text-indigo-400 font-mono">{densityFluidA} g/cm³</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0.6" 
+                    max="1.5" 
+                    step="0.1"
+                    value={densityFluidA} 
+                    onChange={(e) => { setDensityFluidA(Number(e.target.value)); playSound('click'); }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-3xs text-slate-500">Kerapatan zat cair dalam wadah</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== 5. ASESMEN CAT ==================== */}
+        {activeTab === 'asesmen' && (
+          <div className="max-w-4xl w-full mx-auto py-4 animate-fadeIn">
+            {/* Halaman Mulai CAT */}
+            {catStep === 'start' && (
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-10 text-center flex flex-col items-center gap-6 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl"></div>
+                
+                <div className="p-4 bg-indigo-600/15 rounded-full text-indigo-400 border border-indigo-500/20">
+                  <Award className="w-12 h-12" />
+                </div>
+                
+                <div className="space-y-2">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Computer Assisted Test (CAT)</h2>
+                  <p className="text-sm sm:text-base text-slate-300 max-w-lg">
+                    Mari uji pemahaman Anda mengenai Tekanan Hidrostatis, Hukum Pascal, dan Hukum Archimedes melalui simulasi evaluasi dengan sistem CAT.
+                  </p>
+                </div>
+
+                {/* Info Ketentuan Ujian */}
+                <div className="grid grid-cols-3 gap-4 w-full max-w-md bg-slate-900/50 p-4 rounded-xl border border-slate-850 text-center">
+                  <div>
+                    <span className="text-3xs uppercase tracking-wider text-slate-400 block">Jumlah Soal</span>
+                    <strong className="text-sm font-extrabold text-indigo-400">5 Pilihan Ganda</strong>
+                  </div>
+                  <div className="border-x border-slate-800">
+                    <span className="text-3xs uppercase tracking-wider text-slate-400 block">Metode Umpan Balik</span>
+                    <strong className="text-sm font-extrabold text-emerald-400">Instan & Terbuka</strong>
+                  </div>
+                  <div>
+                    <span className="text-3xs uppercase tracking-wider text-slate-400 block">Standar KKM</span>
+                    <strong className="text-sm font-extrabold text-amber-400">75% Nilai</strong>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => { playSound('click'); setCatStep('questions'); }}
+                  className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
+                >
+                  Mulai Ujian CAT Sekarang
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Halaman Soal-soal CAT */}
+            {catStep === 'questions' && (
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-8 flex flex-col gap-6 shadow-2xl">
+                {/* Header Progress Soal */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/20">
+                      Soal Ke {currentQ + 1} Dari {questions.length}
+                    </span>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="flex-1 max-w-xs mx-4 bg-slate-800 h-2 rounded-full overflow-hidden hidden sm:block">
+                    <div 
+                      className="bg-indigo-500 h-full transition-all duration-300"
+                      style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-slate-400">Status Ujian: CAT AKTIF</span>
+                </div>
+
+                {/* Box Pertanyaan */}
+                <div className="bg-slate-900/40 border border-slate-850 p-4 sm:p-6 rounded-xl">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-200 leading-relaxed">
+                    {questions[currentQ].question}
+                  </h3>
+                </div>
+
+                {/* Sektor Pilihan Jawaban CAT */}
+                <div className="flex flex-col gap-3">
+                  {questions[currentQ].options.map((option, idx) => {
+                    const isSelected = selectedAnswers[currentQ] === idx;
+                    const showSuccessStyle = isAnswered && option.isCorrect;
+                    const showFailStyle = isAnswered && isSelected && !option.isCorrect;
+
+                    let optionBorderClass = "border-slate-800 bg-slate-900/20 hover:bg-slate-900/50 hover:border-slate-700";
+                    let optionTextClass = "text-slate-300";
+                    
+                    if (isSelected && !isAnswered) {
+                      optionBorderClass = "border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500/50";
+                      optionTextClass = "text-indigo-300 font-semibold";
+                    } else if (showSuccessStyle) {
+                      optionBorderClass = "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/30";
+                      optionTextClass = "text-emerald-300 font-bold";
+                    } else if (showFailStyle) {
+                      optionBorderClass = "border-rose-500 bg-rose-500/10 ring-1 ring-rose-500/30";
+                      optionTextClass = "text-rose-300 font-bold";
+                    }
+
+                    return (
+                      <button 
+                        key={idx}
+                        onClick={() => handleAnswerSelect(idx)}
+                        disabled={isAnswered}
+                        className={`w-full text-left p-4 rounded-xl border flex items-center justify-between gap-3 transition-all ${optionBorderClass}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                            isSelected && !isAnswered 
+                              ? "bg-indigo-600 text-white" 
+                              : showSuccessStyle 
+                                ? "bg-emerald-600 text-white" 
+                                : showFailStyle 
+                                  ? "bg-rose-600 text-white" 
+                                  : "bg-slate-800 text-slate-300"
+                          }`}>
+                            {String.fromCharCode(65 + idx)}
+                          </span>
+                          <span className={`text-sm ${optionTextClass}`}>{option.text}</span>
+                        </div>
+
+                        {/* Indikator Checklist Hijau dan Silang Merah */}
+                        <div className="flex items-center">
+                          {isAnswered && option.isCorrect && (
+                            <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold animate-fadeIn">
+                              <CheckCircle2 className="w-5 h-5" />
+                              <span className="hidden sm:inline">Benar</span>
+                            </div>
+                          )}
+                          {isAnswered && isSelected && !option.isCorrect && (
+                            <div className="flex items-center gap-1.5 text-rose-400 text-xs font-bold animate-fadeIn">
+                              <XCircle className="w-5 h-5" />
+                              <span className="hidden sm:inline">Salah</span>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Kontrol Kuis bawah */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-t border-slate-800 pt-5">
+                  <div>
+                    {selectedAnswers[currentQ] === null && (
+                      <span className="text-xs text-amber-400/80 flex items-center gap-1.5">
+                        <HelpCircle className="w-4 h-4" />
+                        Silakan pilih satu opsi jawaban di atas terlebih dahulu.
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    {!isAnswered ? (
+                      <button 
+                        onClick={handleCheckAnswer}
+                        disabled={selectedAnswers[currentQ] === null}
+                        className={`w-full sm:w-auto px-6 py-3 font-bold rounded-xl transition-all ${
+                          selectedAnswers[currentQ] === null 
+                            ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-750" 
+                            : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25"
+                        }`}
+                      >
+                        Kirim Jawaban (Kunci)
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleNextQuestion}
+                        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/35 transition-all flex items-center justify-center gap-2 group"
+                      >
+                        {currentQ < questions.length - 1 ? 'Pertanyaan Berikutnya' : 'Lihat Hasil Ujian'}
+                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Kotak Pembahasan */}
+                {isAnswered && (
+                  <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4 text-xs sm:text-sm text-slate-300 mt-2 animate-fadeIn">
+                    <h4 className="font-bold text-indigo-400 flex items-center gap-1.5 mb-1.5">
+                      <Info className="w-4 h-4 text-indigo-400" />
+                      Pembahasan & Tinjauan Variabel:
+                    </h4>
+                    <p className="leading-relaxed italic">{questions[currentQ].explanation}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Halaman Hasil Ujian CAT */}
+            {catStep === 'result' && (
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-10 text-center flex flex-col items-center gap-6 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl"></div>
+
+                <div className="p-4 bg-indigo-600/15 rounded-full text-indigo-400 border border-indigo-500/20">
+                  <Award className="w-12 h-12" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Hasil Ujian CAT Anda</h2>
+                  <p className="text-xs sm:text-sm text-slate-400">Ujian Berbasis Komputer Mandiri - Fluida Statis</p>
+                </div>
+
+                {/* Score Big Display */}
+                <div className="relative flex flex-col items-center justify-center bg-slate-900/60 border border-slate-800 rounded-2xl p-6 w-full max-w-sm">
+                  <span className="text-xs uppercase tracking-widest text-slate-400">Skor Akhir</span>
+                  <span className="text-6xl font-black text-indigo-400 font-mono mt-2">
+                    {(quizScore / questions.length) * 100}
+                  </span>
+                  <p className="text-xs text-slate-400 mt-2">
+                    Menjawab Benar <strong className="text-emerald-400">{quizScore}</strong> dari <strong className="text-indigo-400">{questions.length}</strong> pertanyaan
+                  </p>
+                  
+                  {/* Penentuan Kelulusan */}
+                  <div className="mt-4 w-full">
+                    {((quizScore / questions.length) * 100) >= 80 ? (
+                      <span className="px-4 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-bold uppercase tracking-wider block">
+                        Lulus (Sangat Baik)
+                      </span>
+                    ) : ((quizScore / questions.length) * 100) >= 60 ? (
+                      <span className="px-4 py-1.5 bg-amber-500/15 border border-amber-500/30 rounded-full text-amber-400 text-xs font-bold uppercase tracking-wider block">
+                        Lulus (Butuh Pengayaan)
+                      </span>
+                    ) : (
+                      <span className="px-4 py-1.5 bg-rose-500/15 border border-rose-500/30 rounded-full text-rose-400 text-xs font-bold uppercase tracking-wider block">
+                        Belum Lulus KKM (Silakan Mengulang)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tombol aksi */}
+                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center">
+                  <button 
+                    onClick={resetQuiz}
+                    className="flex-1 px-6 py-3.5 bg-indigo-650 hover:bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    Ulangi Ujian CAT
+                  </button>
+                  <button 
+                    onClick={() => { playSound('click'); setActiveTab('hidrostatis'); }}
+                    className="flex-1 px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-2 transition-all"
+                  >
+                    Tinjau Ulang Materi
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </main>
+
+      {/* Navigasi Footer Langkah (Prev & Next di paling bawah layar) */}
+      <footer className="bg-slate-950 border-t border-slate-800 px-4 py-4 mt-8">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <button 
+            onClick={prevSection}
+            disabled={activeTab === 'cover'}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all ${
+              activeTab === 'cover' 
+                ? 'text-slate-600 cursor-not-allowed bg-transparent' 
+                : 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Sebelumnya
+          </button>
+
+          {/* Navigasi Mini Dot */}
+          <div className="flex items-center gap-2">
+            {['cover', 'hidrostatis', 'pascal', 'archimedes', 'asesmen'].map((tab, idx) => (
+              <span 
+                key={idx}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  activeTab === tab ? 'w-6 bg-indigo-500' : 'w-2 bg-slate-800'
+                }`}
+              ></span>
+            ))}
+          </div>
+
+          <button 
+            onClick={nextSection}
+            disabled={activeTab === 'asesmen'}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all ${
+              activeTab === 'asesmen' 
+                ? 'text-slate-600 cursor-not-allowed bg-transparent' 
+                : 'bg-indigo-650 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/10'
+            }`}
+          >
+            Berikutnya
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </footer>
+    </div>
+  );
+}
